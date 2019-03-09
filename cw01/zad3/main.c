@@ -1,10 +1,27 @@
+#include <dlfcn.h>
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/times.h>
 #include <zconf.h>
 #include <time.h>
+
+#ifndef DLL
+
 #include "find_lib.h"
+
+#endif
+
+#ifdef DLL
+void* dll_handle;
+struct result_array{
+    int size;
+    int free_index;
+    char** array;
+};
+
+#endif
+
 
 void measure_times(int argc, char* const* argv, struct result_array* res_arr);
 
@@ -22,10 +39,18 @@ void print_time(clock_t start, clock_t end, struct tms* tms_start, struct tms* t
 
 
 int main(int argc, char* argv[]) {
+#ifdef DLL
+    dll_handle = dlopen("./libfind_lib.so", RTLD_LAZY);
+    struct result_array* (*create_results_array) (int) = dlsym(dll_handle, "create_results_array");
+    void* (*delete_array) (struct result_array*) = dlsym(dll_handle, "delete_array");
+#endif
     if (argc < 3) return -1;
     struct result_array* res_arr = create_results_array((int) strtol(argv[1], NULL, 10));
     measure_times(argc, argv, res_arr);
     delete_array(res_arr);
+#ifdef DLL
+    dlclose(dll_handle);
+#endif
     return 0;
 }
 
@@ -47,6 +72,12 @@ void measure_times(int argc, char* const* argv, struct result_array* res_arr) {
 }
 
 char* exec_operation(char* const* argv, struct result_array* res_arr, int* i) {
+#ifdef DLL
+    void* (*search) (char*, char*, char*) = dlsym(dll_handle, "search");
+    int* (*save_file_in_array) (struct result_array*, char*) = dlsym(dll_handle, "save_file_in_array");
+    int* (*delete_block) (struct result_array*, int) = dlsym(dll_handle, "delete_block");
+    struct result_array* (*create_results_array) (int) = dlsym(dll_handle, "create_results_array");
+#endif
     // returns executed operation name with arguments, to print later
     char* result = "(None)";
     char* op = argv[*i];
