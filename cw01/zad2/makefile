@@ -30,7 +30,7 @@ test_shared:
 	./main_shared 10 search_directory / bin tmp3.txt search_directory /etc/ passwd tmp3.txt search_directory ~ file tmp3.txt remove_block_index 0 remove_block_index 1 remove_block_index 2 remove_block_index 3
 	./main_shared 10000 add_and_delete 50 100 tmp3.txt
 
-report:
+report: static
 	make test_static 1> raport2.txt
 
 clean_all: clean
