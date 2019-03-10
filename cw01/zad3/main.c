@@ -25,7 +25,16 @@ struct result_array{
 
 void measure_times(int argc, char* const* argv, struct result_array* res_arr);
 
-char* exec_operation(char* const* argv, struct result_array* res_arr, int* i);
+char* exec_operation(char* const* argv, int argc, struct result_array* res_arr, int* i);
+
+char* search_directory(char* const* argv, int argc, struct result_array* res_arr, int* i, const char* op);
+
+char* get_op_call(const char* op, int argument);
+
+char* add_and_delete(char* const* argv, int argc, struct result_array* res_arr, int* i, const char* op);
+
+char* exec_one_arg(char* const* argv, int argc, int* i, const char* op, struct result_array* res_arr);
+
 
 double time_diff(clock_t start, clock_t end) {
     return (double) (end - start) / sysconf(_SC_CLK_TCK);
@@ -44,8 +53,25 @@ int main(int argc, char* argv[]) {
     struct result_array* (*create_results_array) (int) = dlsym(dll_handle, "create_results_array");
     void* (*delete_array) (struct result_array*) = dlsym(dll_handle, "delete_array");
 #endif
-    if (argc < 3) return -1;
+    if (argc < 3) {
+        fprintf(stderr, "Too few arguments, required: array size, list of operations, one of:\n"
+                        "search_directory dir_name file_name file_for_results\n"
+                        "add_and_delete how_many_blocks how_many_times file_to_save_as_arr_block\n"
+                        "create_table size\n"
+                        "remove_block index\n");
+#ifdef DLL
+        dlclose(dll_handle);
+#endif
+        return -1;
+    }
     struct result_array* res_arr = create_results_array((int) strtol(argv[1], NULL, 10));
+    if (!res_arr) {
+        fprintf(stderr, "Error creating array, first argument must be a positive integer\n");
+#ifdef DLL
+        dlclose(dll_handle);
+#endif
+        return -2;
+    }
     measure_times(argc, argv, res_arr);
     delete_array(res_arr);
 #ifdef DLL
@@ -62,7 +88,8 @@ void measure_times(int argc, char* const* argv, struct result_array* res_arr) {
         clock_t start_time = 0;
         clock_t end_time = 0;
         start_time = times(tms_start_time);
-        char* op = exec_operation(argv, res_arr, &i);
+        char* op = exec_operation(argv, argc, res_arr, &i); //exec increments i to get all needed arguments
+        ++i; // move to next operation
         end_time = times(tms_end_time);
         printf("Operation: %s\n", op);
         print_time(start_time, end_time, tms_start_time, tms_end_time);
@@ -71,53 +98,106 @@ void measure_times(int argc, char* const* argv, struct result_array* res_arr) {
     }
 }
 
-char* exec_operation(char* const* argv, struct result_array* res_arr, int* i) {
-#ifdef DLL
-    void* (*search) (char*, char*, char*) = dlsym(dll_handle, "search");
-    int* (*save_file_in_array) (struct result_array*, char*) = dlsym(dll_handle, "save_file_in_array");
-    int* (*delete_block) (struct result_array*, int) = dlsym(dll_handle, "delete_block");
-    struct result_array* (*create_results_array) (int) = dlsym(dll_handle, "create_results_array");
-#endif
-    // returns executed operation name with arguments, to print later
-    char* result = "(None)";
+char* exec_operation(char* const* argv, int argc, struct result_array* res_arr, int* i) {
+    // returns executed operation name with arguments, for printing
+    char* op_executed = "(None)";
     char* op = argv[*i];
     if (strcmp(op, "search_directory") == 0) {
-        char* dir = argv[++(*i)];
-        char* filename = argv[++(*i)];
-        char* result_tmp_file = argv[++(*i)];
-        search(dir, filename, result_tmp_file);
-        save_file_in_array(res_arr, result_tmp_file);
-        // calculate max length of the result to print
-        size_t op_len = strlen(op) + strlen(dir) + strlen(filename) + strlen(result_tmp_file) + 4;
-        result = calloc(op_len, sizeof(char));
-        snprintf(result, op_len, "%s %s %s %s", op, dir, filename, result_tmp_file);
-    } else if (strcmp(op, "remove_block_index") == 0) {
-        int index = (int) strtol(argv[++(*i)], NULL, 10);
-        delete_block(res_arr, index);
-        result = calloc(strlen(op) + 50, sizeof(char));
-        sprintf(result, "%s %d", op, index);
-    } else if (strcmp(op, "create_table") == 0) {
-        int size = (int) strtol(argv[++(*i)], NULL, 10);
-        create_results_array(size);
-        result = calloc(strlen(op) + 50, sizeof(char));
-        sprintf(result, "%s %d", op, size);
+        op_executed = search_directory(argv, argc, res_arr, i, op);
     } else if (strcmp(op, "add_and_delete") == 0) {
-        int n_blocks = (int) strtol(argv[++(*i)], NULL, 10);
-        int n_times = (int) strtol(argv[++(*i)], NULL, 10);
-        char* tmp_file_path = argv[++(*i)];
-        for (int i = 0; i < n_times; i++) {
-            for (int j = 0; j < n_blocks; ++j) {
-                save_file_in_array(res_arr, tmp_file_path);
-            }
-            for (int j = 0; j < n_blocks; ++j) {
-                delete_block(res_arr, res_arr->free_index - 1);
+        op_executed = add_and_delete(argv, argc, res_arr, i, op);
+    } else if (strcmp(op, "remove_block_index") == 0 || strcmp(op, "create_table") == 0) {
+        op_executed = exec_one_arg(argv, argc, i, op, res_arr);
+    } else {
+        fprintf(stderr, "Invalid operation %s\n", op);
+    }
+    return op_executed;
+}
+
+
+char* exec_one_arg(char* const* argv, int argc, int* i, const char* op, struct result_array* res_arr) {
+#ifdef DLL
+    void* (*delete_array) (struct result_array*) = dlsym(dll_handle, "delete_array");
+    int (*delete_block) (struct result_array*, int) = dlsym(dll_handle, "delete_block");
+    struct result_array* (*create_results_array) (int) = dlsym(dll_handle, "create_results_array");
+#endif
+    char* op_executed = NULL;
+    if (*i >= argc - 1) {
+        fprintf(stderr, "Too few arguments for %s\n", op);
+        strcpy(op_executed, op);
+        return strcat(op_executed, " (failed)");
+    }
+    int argument = (int) strtol(argv[++(*i)], NULL, 10);
+    if (strcmp(op, "remove_block_index") == 0) {
+        if(delete_block(res_arr, argument) < 0){
+            fprintf(stderr, "error while removing block %d from main array\n", argument);
+            return "remove_block_index (failed)";
+        }
+    }
+    else delete_array(create_results_array(argument));
+
+    op_executed = get_op_call(op, argument);
+    return op_executed;
+}
+
+char* get_op_call(const char* op, int argument) {
+    char* op_executed = calloc(strlen(op) + 50, sizeof(char));
+    sprintf(op_executed, "%s %d", op, argument);
+    return op_executed;
+}
+
+char* search_directory(char* const* argv, int argc, struct result_array* res_arr, int* i, const char* op) {
+#ifdef DLL
+    void* (*search) (char*, char*, char*) = dlsym(dll_handle, "search");
+    int (*save_file_in_array) (struct result_array*, char*) = dlsym(dll_handle, "save_file_in_array");
+#endif
+    if (*i >= argc - 3) {
+        fprintf(stderr, "Too few arguments for search_directory\n");
+        return "search_directory (failed)";
+    }
+    char* dir = argv[++(*i)];
+    char* filename = argv[++(*i)];
+    char* result_tmp_file = argv[++(*i)];
+    search(dir, filename, result_tmp_file);
+    save_file_in_array(res_arr, result_tmp_file);
+    // calculate max length of the op_executed to print
+    size_t op_len = strlen(op) + strlen(dir) + strlen(filename) + strlen(result_tmp_file) + 4;
+    char* op_executed = calloc(op_len, sizeof(char));
+    snprintf(op_executed, op_len, "%s %s %s %s", op, dir, filename, result_tmp_file);
+    return op_executed;
+}
+
+char* add_and_delete(char* const* argv, int argc, struct result_array* res_arr, int* i, const char* op) {
+#ifdef DLL
+    void* (*delete_block) (struct result_array*, int) = dlsym(dll_handle, "delete_block");
+    int (*save_file_in_array) (struct result_array*, char*) = dlsym(dll_handle, "save_file_in_array");
+#endif
+    if (*i >= argc - 3) {
+        fprintf(stderr, "Too few arguments for add_and_delete\n");
+        return "add_and_delete (failed)";
+    }
+    int n_blocks = (int) strtol(argv[++(*i)], NULL, 10);
+    int n_times = (int) strtol(argv[++(*i)], NULL, 10);
+    char* tmp_file_path = argv[++(*i)];
+    for (int i = 0; i < n_times; i++) {
+        for (int j = 0; j < n_blocks; ++j) {
+            int code = save_file_in_array(res_arr, tmp_file_path);
+            if (code < 0) {
+                fprintf(stderr, "Error saving file %s to array", tmp_file_path);
+                if (code == -2) {
+                    fprintf(stderr, ", out of space\n");
+                } else if (code == -3) {
+                    fprintf(stderr, ", file not existing or forbidden\n");
+                }
+                fprintf(stderr, "\n");
+                return "add_and_delete (failed)";
             }
         }
-        result = calloc(strlen(op) + strlen(tmp_file_path) + 50, sizeof(char));
-        sprintf(result, "%s (n_blocks) %d (n_times) %d %s", op, n_blocks, n_times, tmp_file_path);
-    } else {
-        printf("Invalid operation %s\n", op);
+        for (int j = 0; j < n_blocks; ++j) {
+            delete_block(res_arr, res_arr->free_index - 1);
+        }
     }
-    (*i)++;
-    return result;
+    char* op_executed = calloc(strlen(op) + strlen(tmp_file_path) + 50, sizeof(char));
+    sprintf(op_executed, "%s (n_blocks) %d (n_times) %d %s", op, n_blocks, n_times, tmp_file_path);
+    return op_executed;
 }

@@ -25,9 +25,9 @@ void search(char* directory, char* file, char* result_file_path) {
 }
 
 size_t get_txt_file_len(FILE* file) {
-    size_t pos = ftell(file); //save current position
+    size_t pos = (size_t) ftell(file); //save current position
     fseek(file, 0, SEEK_END);
-    size_t file_length = ftell(file);
+    size_t file_length = (size_t) ftell(file);
     fseek(file, pos, SEEK_SET); //restore previous position
     return file_length;
 }
