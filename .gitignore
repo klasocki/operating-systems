@@ -68,3 +68,5 @@ cmake-build-debug/*
 *.cbp
 .idea/*
 sysopy
+
+*.tar*
