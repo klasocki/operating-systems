@@ -8,10 +8,9 @@ static:
  # build static lib
 	ar rcs find_lib.a find_lib.o
 
-
 shared:
-	$(CC) -fPIC -c find_lib.c
-	$(CC) -fPIC -shared -o find_lib.so find_lib.o
+	$(CC) -fPIC -c find_lib.c -o libfind_lib.o
+	$(CC) -fPIC -shared libfind_lib.o -o libfind_lib.so
 
 clean:
 	rm -rf *.o

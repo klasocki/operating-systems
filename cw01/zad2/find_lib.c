@@ -7,7 +7,7 @@
 
 
 struct result_array* create_results_array(int n_elements) {
-    if (n_elements < 0) {
+    if (n_elements <= 0) {
         return NULL;
     }
     struct result_array* result = malloc(sizeof(struct result_array));
