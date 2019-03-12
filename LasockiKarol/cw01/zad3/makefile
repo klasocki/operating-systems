@@ -1,6 +1,6 @@
 CC = gcc -Wall -std=c99
 
-all: static shared dynamic test clean
+all: static shared dynamic test clean_all
 
 static:
 # build sources
@@ -40,13 +40,35 @@ test_dynamic:
 	./main_dynamic 10000 add_and_delete 50 100 tmp2.txt
 
 report: static shared dynamic
-	echo "Static library: " > results3a.txt
+	echo "----------------\nStatic lib:\n----------------\n" > results3a.txt
 	make test_static 1>> results3a.txt
-	echo "Shared library: " >> results3a.txt
+	echo "----------------\nShared lib:\n----------------\n" >> results3a.txt
 	make test_shared 1>> results3a.txt
-	echo "Dynamic library: " >> results3a.txt
+	echo "----------------\nDynamic lib:\n----------------\n" >> results3a.txt
 	make test_dynamic 1>> results3a.txt
+	make clean_all
+
+reportB: clean
+	echo "Optimization options testing (static lib)" > results3b.txt
+	echo "----------------\n-O:\n----------------\n" >> results3b.txt
+	$(CC) -c find_lib.c -O
+	ar rcs find_lib.a find_lib.o
+	$(CC) -o main_static main.c find_lib.a -I. -O
+	make test_static 1>> results3b.txt
 	make clean
+	echo "----------------\n-O3:\n----------------\n" >> results3b.txt
+	$(CC) -c find_lib.c -O3
+	ar rcs find_lib.a find_lib.o
+	$(CC) -o main_static main.c find_lib.a -I. -O3
+	make test_static 1>> results3b.txt
+	make clean
+	echo "----------------\n-Os:\n----------------\n" >> results3b.txt
+	$(CC) -c find_lib.c -Os
+	ar rcs find_lib.a find_lib.o
+	$(CC) -o main_static main.c find_lib.a -I. -Os
+	make test_static 1>> results3b.txt
+	make clean_all
+
 
 clean_all: clean
 	rm -rf main_static main_shared main_dynamic *tmp.txt tmp*.txt

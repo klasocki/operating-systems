@@ -32,6 +32,7 @@ test_shared:
 
 report: static
 	make test_static 1> raport2.txt
+	make clean_all
 
 clean_all: clean
 	rm -rf main_static main_shared *tmp.txt tmp*.txt
