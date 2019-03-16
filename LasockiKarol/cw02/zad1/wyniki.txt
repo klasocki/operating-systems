@@ -1,0 +1,376 @@
+**********************************************
+Komentarz do wyników:
+Funkcje systemowe są wolniejsze dla sortowania krótkich rekordów, zyskują za to przewagę dla długich rekordów i przy kopiowaniu. Oznacza to prawdopodobnie, że znacznie lepiej od bibliotecznych radzą sobie z zapisem sekwencyjnym, natomiast gorzej gdy są konieczne częste zmiany pozycji kursora w pliku
+*********************************************
+3333 records, 1 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 1
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 1 lib
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 3333 1 lib
+Real time:    1.820000000s
+User time:    0.720000000000s
+Sys. time:    1.100000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 1 sys
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 1 sys
+Real time:    5.780000000s
+User time:    2.250000000000s
+Sys. time:    3.520000000000s
+
+____________________________
+3333 records, 4 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 4
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 4 lib
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 3333 4 lib
+Real time:    1.910000000s
+User time:    0.760000000000s
+Sys. time:    1.140000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 4 sys
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 4 sys
+Real time:    5.900000000s
+User time:    2.470000000000s
+Sys. time:    3.410000000000s
+
+____________________________
+3333 records, 512 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 512
+Real time:    0.030000000s
+User time:    0.010000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 512 lib
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 3333 512 lib
+Real time:    2.540000000s
+User time:    0.740000000000s
+Sys. time:    1.780000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 512 sys
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 512 sys
+Real time:    5.990000000s
+User time:    2.450000000000s
+Sys. time:    3.520000000000s
+
+____________________________
+3333 records, 1024 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 1024
+Real time:    0.050000000s
+User time:    0.040000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 1024 lib
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 3333 1024 lib
+Real time:    3.510000000s
+User time:    0.950000000000s
+Sys. time:    2.550000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 1024 sys
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 1024 sys
+Real time:    5.820000000s
+User time:    2.140000000000s
+Sys. time:    3.660000000000s
+
+____________________________
+3333 records, 4096 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 4096
+Real time:    0.170000000s
+User time:    0.150000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 4096 lib
+Real time:    0.030000000s
+User time:    0.000000000000s
+Sys. time:    0.010000000000s
+
+Operation: sort tmp_lib.txt 3333 4096 lib
+Real time:    7.800000000s
+User time:    1.450000000000s
+Sys. time:    6.340000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 4096 sys
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 4096 sys
+Real time:    6.130000000s
+User time:    2.290000000000s
+Sys. time:    3.820000000000s
+
+____________________________
+3333 records, 8196 bytes each
+---------------
+
+Operation: generate tmp.txt 3333 8196
+Real time:    0.390000000s
+User time:    0.370000000000s
+Sys. time:    0.020000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 3333 8196 lib
+Real time:    0.060000000s
+User time:    0.000000000000s
+Sys. time:    0.050000000000s
+
+Operation: sort tmp_lib.txt 3333 8196 lib
+Real time:    8.280000000s
+User time:    1.380000000000s
+Sys. time:    6.890000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 3333 8196 sys
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 3333 8196 sys
+Real time:    5.650000000s
+User time:    2.260000000000s
+Sys. time:    3.380000000000s
+
+____________________________
+6666 records, 1 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 1
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 1 lib
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 6666 1 lib
+Real time:    7.680000000s
+User time:    2.980000000000s
+Sys. time:    4.690000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 1 sys
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 6666 1 sys
+Real time:    23.440000000s
+User time:    9.160000000000s
+Sys. time:    14.260000000000s
+
+____________________________
+6666 records, 4 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 4
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 4 lib
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 6666 4 lib
+Real time:    7.160000000s
+User time:    2.800000000000s
+Sys. time:    4.360000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 4 sys
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 6666 4 sys
+Real time:    21.980000000s
+User time:    8.760000000000s
+Sys. time:    13.200000000000s
+
+____________________________
+6666 records, 512 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 512
+Real time:    0.040000000s
+User time:    0.030000000000s
+Sys. time:    0.010000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 512 lib
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_lib.txt 6666 512 lib
+Real time:    9.690000000s
+User time:    3.240000000000s
+Sys. time:    6.450000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 512 sys
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.000000000000s
+
+Operation: sort tmp_sys.txt 6666 512 sys
+Real time:    22.420000000s
+User time:    8.890000000000s
+Sys. time:    13.520000000000s
+
+____________________________
+6666 records, 1024 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 1024
+Real time:    0.080000000s
+User time:    0.070000000000s
+Sys. time:    0.000000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 1024 lib
+Real time:    0.010000000s
+User time:    0.000000000000s
+Sys. time:    0.010000000000s
+
+Operation: sort tmp_lib.txt 6666 1024 lib
+Real time:    12.000000000s
+User time:    3.440000000000s
+Sys. time:    8.560000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 1024 sys
+Real time:    0.000000000s
+User time:    0.000000000000s
+Sys. time:    0.010000000000s
+
+Operation: sort tmp_sys.txt 6666 1024 sys
+Real time:    22.470000000s
+User time:    8.650000000000s
+Sys. time:    13.810000000000s
+
+____________________________
+6666 records, 4096 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 4096
+Real time:    0.310000000s
+User time:    0.290000000000s
+Sys. time:    0.010000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 4096 lib
+Real time:    0.040000000s
+User time:    0.000000000000s
+Sys. time:    0.030000000000s
+
+Operation: sort tmp_lib.txt 6666 4096 lib
+Real time:    27.350000000s
+User time:    5.290000000000s
+Sys. time:    22.050000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 4096 sys
+Real time:    0.020000000s
+User time:    0.000000000000s
+Sys. time:    0.010000000000s
+
+Operation: sort tmp_sys.txt 6666 4096 sys
+Real time:    22.630000000s
+User time:    8.610000000000s
+Sys. time:    14.020000000000s
+
+____________________________
+6666 records, 8196 bytes each
+---------------
+
+Operation: generate tmp.txt 6666 8196
+Real time:    0.660000000s
+User time:    0.560000000000s
+Sys. time:    0.060000000000s
+
+---- LIB: ---- 
+Operation: copy tmp.txt tmp_lib.txt 6666 8196 lib
+Real time:    0.260000000s
+User time:    0.000000000000s
+Sys. time:    0.070000000000s
+
+Operation: sort tmp_lib.txt 6666 8196 lib
+Real time:    27.030000000s
+User time:    5.320000000000s
+Sys. time:    21.700000000000s
+
+---- SYS ----
+Operation: copy tmp.txt tmp_sys.txt 6666 8196 sys
+Real time:    0.020000000s
+User time:    0.000000000000s
+Sys. time:    0.010000000000s
+
+Operation: sort tmp_sys.txt 6666 8196 sys
+Real time:    22.610000000s
+User time:    8.550000000000s
+Sys. time:    14.050000000000s
+
+____________________________
