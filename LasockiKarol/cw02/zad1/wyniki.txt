@@ -284,7 +284,7 @@ ____________________________
 6666 records, 1024 bytes each
 ---------------
 
-Operation: generate tmp.txt 6666 1024
+Operation: execute_generate tmp.txt 6666 1024
 Real time:    0.080000000s
 User time:    0.070000000000s
 Sys. time:    0.000000000000s
