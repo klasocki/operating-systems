@@ -25,7 +25,7 @@ void print_time(clock_t start, clock_t end, struct tms* tms_start, struct tms* t
 int generate(char* file_path, int n_lines, size_t n_bytes) {
     FILE* file = fopen(file_path, "w+");
     if (!file) {
-        fprintf(stderr, "Trouble opening file %s", file_path);
+        fprintf(stderr, "Trouble opening file %s\n", file_path);
         return -1;
     }
     time_t t;
@@ -46,7 +46,7 @@ int sort_lib(char* file_path, int n_lines, int n_bytes) {
     size_t line_len = (size_t) (n_bytes + 1);
     FILE* file = fopen(file_path, "r+");
     if (!file) {
-        fprintf(stderr, "Trouble opening file %s", file_path);
+        fprintf(stderr, "Trouble opening file %s\n", file_path);
         return -1;
     }
     unsigned char buffer1[line_len];
@@ -54,7 +54,7 @@ int sort_lib(char* file_path, int n_lines, int n_bytes) {
     for (int i = 0; i < n_lines; i++) {
         fseek(file, i * line_len, SEEK_SET);
         if (fread(buffer1, sizeof(char), line_len, file) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     file_path, n_bytes);
             return -2;
         }
@@ -70,7 +70,7 @@ int sort_lib(char* file_path, int n_lines, int n_bytes) {
         }
         fseek(file, min_index * line_len, SEEK_SET);
         if (fread(buffer2, sizeof(char), line_len, file) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     file_path, n_bytes);
             return -2;
         }
@@ -79,7 +79,7 @@ int sort_lib(char* file_path, int n_lines, int n_bytes) {
         fseek(file, i * line_len, SEEK_SET);
         fwrite(buffer2, sizeof(char), line_len, file);
         if (ferror(file)) {
-            fprintf(stderr, "Error writing to file %s", file_path);
+            fprintf(stderr, "Error writing to file %s\n", file_path);
             return -3;
         }
     }
@@ -91,7 +91,7 @@ int sort_sys(char* file_path, int n_lines, int n_bytes) {
     int line_len = n_bytes + 1;
     int file = open(file_path, O_RDWR);
     if (!file) {
-        fprintf(stderr, "Trouble opening file %s", file_path);
+        fprintf(stderr, "Trouble opening file %s\n", file_path);
         return -1;
     }
     unsigned char buffer1[line_len];
@@ -99,7 +99,7 @@ int sort_sys(char* file_path, int n_lines, int n_bytes) {
     for (int i = 0; i < n_lines; i++) {
         lseek(file, i * line_len, SEEK_SET);
         if (read(file, buffer1, line_len * sizeof(char)) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     file_path, n_bytes);
             return -2;
         }
@@ -109,7 +109,7 @@ int sort_sys(char* file_path, int n_lines, int n_bytes) {
             lseek(file, j * line_len, SEEK_SET);
             unsigned char first_in_line;
             if (read(file, &first_in_line, sizeof(char)) != 1) {
-                fprintf(stderr, "Error while reading file %s",
+                fprintf(stderr, "Error while reading file %s\n",
                         file_path);
                 return -2;
             }
@@ -120,25 +120,25 @@ int sort_sys(char* file_path, int n_lines, int n_bytes) {
         }
         lseek(file, min_index * line_len, SEEK_SET);
         if (read(file, buffer2, line_len * sizeof(char)) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     file_path, n_bytes);
             return -2;
         }
         lseek(file, min_index * line_len, SEEK_SET);
         if (write(file, buffer1, line_len * sizeof(char)) == -1) {
-            fprintf(stderr, "Error writing to file %s",
+            fprintf(stderr, "Error writing to file %s\n",
                     file_path);
             return -3;
         }
         lseek(file, i * line_len, SEEK_SET);
         if (write(file, buffer2, line_len * sizeof(char)) == -1) {
-            fprintf(stderr, "Error writing to file %s",
+            fprintf(stderr, "Error writing to file %s\n",
                     file_path);
             return -3;
         }
     }
     if (close(file) != 0) {
-        fprintf(stderr, "Error while closing file %s", file_path);
+        fprintf(stderr, "Error while closing file %s\n", file_path);
         return -4;
     }
     return 0;
@@ -149,28 +149,28 @@ int copy_lib(char* source_path, char* dest_path, int n_lines, int n_bytes) {
     FILE* source_file = fopen(source_path, "r");
     FILE* dest_file = fopen(dest_path, "w");
     if (!source_file || !dest_file) {
-        fprintf(stderr, "Trouble opening file %s or %s", source_path, dest_path);
+        fprintf(stderr, "Trouble opening file %s or %s\n", source_path, dest_path);
         return -1;
     }
     unsigned char buffer[line_len];
     for (int i = 0; i < n_lines; i++) {
         if (fread(buffer, sizeof(char), line_len, source_file) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     source_path, n_bytes);
             return -2;
         }
         fwrite(buffer, sizeof(char), line_len, dest_file);
     }
     if (ferror(dest_file)) {
-        fprintf(stderr, "Error writing to file %s", dest_path);
+        fprintf(stderr, "Error writing to file %s\n", dest_path);
         return -3;
     }
     if (fclose(source_file) != 0) {
-        fprintf(stderr, "Error closing file %s", source_path);
+        fprintf(stderr, "Error closing file %s\n", source_path);
         return -4;
     }
     if (fclose(dest_file) != 0) {
-        fprintf(stderr, "Error closing file %s", dest_path);
+        fprintf(stderr, "Error closing file %s\n", dest_path);
         return -5;
     }
     return 0;
@@ -181,28 +181,28 @@ int copy_sys(char* source_path, char* dest_path, int n_lines, int n_bytes) {
     int source_file = open(source_path, O_RDONLY);
     int dest_file = open(dest_path, O_WRONLY | O_CREAT | O_TRUNC);
     if (!source_file || !dest_file) {
-        fprintf(stderr, "Trouble opening file %s or %s", source_path, dest_path);
+        fprintf(stderr, "Trouble opening file %s or %s\n", source_path, dest_path);
         return -1;
     }
     unsigned char buffer[line_len];
     for (int i = 0; i < n_lines; i++) {
         if (read(source_file, buffer, line_len * sizeof(char)) != line_len) {
-            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes",
+            fprintf(stderr, "Error while reading file %s, each line must contain exactly %d bytes\n",
                     source_path, n_bytes);
             return -2;
         }
         if (write(dest_file, buffer, line_len * sizeof(char)) == -1) {
-            fprintf(stderr, "Error writing to file %s",
+            fprintf(stderr, "Error writing to file %s\n",
                     dest_path);
             return -3;
         }
     }
     if (close(source_file) != 0) {
-        fprintf(stderr, "Error while closing file %s", source_path);
+        fprintf(stderr, "Error while closing file %s\n", source_path);
         return -4;
     }
     if (close(dest_file) != 0) {
-        fprintf(stderr, "Error while closing file %s", dest_path);
+        fprintf(stderr, "Error while closing file %s\n", dest_path);
         return -5;
     }
     return 0;
@@ -256,7 +256,7 @@ char* execute_copy(char* const* argv, int* i) {
                  "copy %s %s %d %d sys", source_path, dest_path, n_lines, n_bytes);
         op_executed = operation;
     } else {
-        fprintf(stderr, "Invalid type %s, must be either lib or sys", type);
+        fprintf(stderr, "Invalid type %s, must be either lib or sys\n", type);
         op_executed = "(None)";
     }
     return op_executed;

@@ -89,7 +89,10 @@ int walk(char* dir_path, char operator, time_t time){
             walk(sub_path, operator, time);
         }
     }
-    closedir(dir);
+    if(closedir(dir) != 0){
+        fprintf(stderr, "Error while closing %s\n", dir_path);
+        return -2;
+    }
     return 0;
 }
 
@@ -109,7 +112,7 @@ int main(int argc, char* argv[]) {
     }
     char* dir_path = realpath(argv[1], NULL);
     if(!dir_path) {
-        fprintf(stderr, "Invalid path %s", dir_path);
+        fprintf(stderr, "Invalid path %s\n", dir_path);
         return -2;
     }
     char operator = argv[2][0];
