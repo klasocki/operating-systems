@@ -1,6 +1,4 @@
-T1 = ./main test ">" "2019-03-16 21:12:12" nftw
-T2 = ./main test ">" "2019-03-16 21:12:12" stat
-T3 = ./main test "<" "2019-03-16 21:12:12" stat
+T = ./main test
 	
 all: main test clean
 
@@ -19,16 +17,7 @@ directory:
 	ln -s ~ test/kat2/home-link
 
 test: main directory
-	echo "$(T1)"
-	$(T1)
-	echo ""
-	echo "*************************"
-	echo ""
-	echo "$(T2)"
-	$(T2)
-	echo "$(T3)"
-	$(T3)
-	rm -r test
+	$(T)
 
 clean:
 	rm -rf *.o
