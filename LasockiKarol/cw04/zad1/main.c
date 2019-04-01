@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     sigaction(SIGINT, &act, NULL);
     while(1) {
         if(!WAITING) {
-            time_t t;   // not a primitive datatype
+            time_t t;
             time(&t);
             printf("%s\n", ctime(&t));
             sleep(1);
