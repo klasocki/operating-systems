@@ -13,7 +13,7 @@ void exit_errno();
 void exit_msg(char* msg);
 
 int main(int argc, char* argv[]) {
-    sleep(1); // so that fifo is created when running master and slave in parallel
+    sleep(1); // so that fifo is always created when running master and slave in parallel
     if(argc!=3) exit_msg("Path to named pipeline and N (times date will be written) required");
     int n = strtol(argv[2], NULL, 10);
     srand(time(NULL));
