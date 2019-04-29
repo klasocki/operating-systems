@@ -24,6 +24,10 @@ void execute_commands_from(FILE* stream);
 
 void handle_message();
 
+void send_add(char* command);
+
+void send_del(char* command);
+
 void send_request(int async) {
     msgsnd(server_queue_id, &msg, MESSAGE_SIZE, 0);
 
@@ -75,9 +79,20 @@ void send_stop() {
 
 void send_friends(const char* string) {
     strcpy(msg.argument, string);
-    msg.type = FRIENDS;
     send(FRIENDS, 1);
 }
+
+
+void send_del(char* string) {
+    strcpy(msg.argument, string);
+    send(DEL, 1);
+}
+
+void send_add(char* string) {
+    strcpy(msg.argument, string);
+    send(ADD, 1);
+}
+
 
 
 void send_init() {
@@ -103,7 +118,14 @@ void exec_command(char* command) {
     } else if (strncmp(command, "2FRIENDS ", 9) == 0) {
         command += 9;
         send_2Friends(command);
-    } else if (strncmp(command, "2ONE ", 5) == 0) {
+    } else if (strncmp(command, "ADD ", 4) == 0) {
+        command += 4;
+        send_add(command);
+    } else if (strncmp(command, "DEL ", 4) == 0) {
+        command += 4;
+        send_del(command);
+    }
+    else if (strncmp(command, "2ONE ", 5) == 0) {
         command += 5;
         char* token = strtok(command, " ");
         int target = atoi(token);

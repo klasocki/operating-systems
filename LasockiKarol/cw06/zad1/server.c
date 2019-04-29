@@ -15,6 +15,10 @@ void get_online_list();
 
 void get_friends_list();
 
+void respond_to_add();
+
+void respond_to_del();
+
 int server_queue_id;
 int clients[MAX_CLIENTS];
 int friends[MAX_CLIENTS][MAX_CLIENTS];
@@ -164,60 +168,57 @@ void get_online_list() {
     }
 }
 
+
+void respond_to_del() {
+    char* token = strtok(msg.argument, " ");
+
+    while (token != NULL) {
+        for (int i = 0; i < MAX_CLIENTS && friends[msg.sender_id][i] != -1; i++) {
+            if (friends[msg.sender_id][i] == atoi(token)) {
+                friends[msg.sender_id][i] = -1;
+                token = strtok(NULL, " ");
+                int j = i + 1;
+                //push friends one place back
+                while (friends[msg.sender_id][j] != -1) {
+                    friends[msg.sender_id][j - 1] = friends[msg.sender_id][j];
+                    friends[msg.sender_id][j] = -1;
+                    j++;
+                }
+            }
+        }
+    }
+}
+
+void respond_to_add() {
+    char* token = strtok(msg.argument, " ");
+    while (token != NULL) {
+        int already_friends = 0;
+        for (int i = 0; i < MAX_CLIENTS; i++)
+            if (friends[msg.sender_id][i] == atoi(token))
+                already_friends = 1;
+
+        if (!already_friends) {
+            int i;
+            for (i = 0; i < MAX_CLIENTS && friends[msg.sender_id][i] != -1; i++) {}
+            friends[msg.sender_id][i] = atoi(token);
+        }
+        token = strtok(NULL, " ");
+    }
+}
+
+
 void respond_to_friends() {
     int client_queue_id = clients[msg.sender_id];
 
     char* token = strtok(msg.argument, " ");
-    if (strcmp(token, "ADD") == 0) {
+    for (int i = 0; i < MAX_CLIENTS; i++)
+        friends[msg.sender_id][i] = -1;
+
+    int i = 0;
+    while (token != NULL && i < MAX_CLIENTS) {
+        friends[msg.sender_id][i++] = atoi(token);
         token = strtok(NULL, " ");
-        while (token != NULL) {
-            int notRepeat = 1;
-            for (int i = 0; i < MAX_CLIENTS; i++)
-                if (friends[msg.sender_id][i] == atoi(token))
-                    notRepeat = 0;
-
-            if (notRepeat == 0) {
-                token = strtok(NULL, " ");
-                continue;
-            }
-
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (friends[msg.sender_id][i] == -1) {
-                    friends[msg.sender_id][i] = atoi(token);
-                    token = strtok(NULL, " ");
-                    break;
-                }
-            }
-        }
-    } else if (strcmp(token, "DEL") == 0) {
-        token = strtok(NULL, " ");
-
-        while (token != NULL) {
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (friends[msg.sender_id][i] == atoi(token)) {
-                    friends[msg.sender_id][i] = -1;
-                    token = strtok(NULL, " ");
-                    int iterator = i + 1;
-                    while (friends[msg.sender_id][iterator] != -1) {
-                        friends[msg.sender_id][iterator - 1] = friends[msg.sender_id][iterator];
-                        friends[msg.sender_id][iterator] = -1;
-                        iterator++;
-                    }
-                    break;
-                }
-            }
-        }
-    } else {
-        for (int i = 0; i < MAX_CLIENTS; i++)
-            friends[msg.sender_id][i] = -1;
-
-        int i = 0;
-        while (token != NULL && i < MAX_CLIENTS) {
-            friends[msg.sender_id][i++] = atoi(token);
-            token = strtok(NULL, " ");
-        }
     }
-
     msgsnd(client_queue_id, &msg, MESSAGE_SIZE, 0);
 }
 
@@ -277,6 +278,12 @@ int main(int argc, char** argv) {
                 break;
             case TO_FRIENDS:
                 respond_to_2Friends();
+                break;
+            case ADD:
+                respond_to_add();
+                break;
+            case DEL:
+                respond_to_del();
                 break;
 
             default:
