@@ -3,23 +3,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/sem.h>
+#include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/types.h>
 #include <semaphore.h>
+#include <fcntl.h>
 #include <sys/times.h>
-#include <sys/shm.h>
+#include <sys/mman.h>
 #include <sys/time.h>
 #include <zconf.h>
+#include <sys/shm.h>
 
-#define SEM_KEY 147
-#define SHM_KEY 17
-int semaphore = -1;
+#define SEM_NAME "/posixsem"
+#define SHM_NAME "/posixshm"
+#define SHM_NAME1 "/posixshm1"
+#define SHM_NAME2 "/posixshm2"
+#define SHM_K "/posixshmK"
+
+sem_t* semaphore = NULL;
 int employee_pids = -1;
 int employee_loads = -1;
 int load_times = -1;
+int k_fd;
 struct timeval* times_arr;
 int* loads;
+int* K_shared;
 pid_t* pids;
 pid_t* pids_to_kill;
 int* tape_load;
@@ -28,13 +36,6 @@ int K;
 int M;
 int truck_load = 0;
 
-union semun {
-    int val;    /* Value for SETVAL */
-    struct semid_ds* buf;    /* Buffer for IPC_STAT, IPC_SET */
-    unsigned short* array;  /* Array for GETALL, SETALL */
-    struct seminfo* __buf;  /* Buffer for IPC_INFO
-                                           (Linux-specific) */
-};
 
 void give_sem();
 
@@ -70,23 +71,27 @@ void sigint_handle(int signum) {
 
 void exit_fun() {
     printf("\nRunning out of trucks! Loading remaining packages...\n\n");
-    int sem_val  = semctl(semaphore, 0, GETVAL);
-    if(sem_val == -1) exit_errno();
-    if(sem_val == 1) take_sem();
+    int sem_val;
+    if (sem_getvalue(semaphore, &sem_val) == -1) exit_errno();
+    if (sem_val == 1) take_sem();
     load_remaining();
     printf("Trucker loaded all packages and quiting - killing all the employees...\n");
     for (int i = 0; i < K; i++) {
         if (pids_to_kill[i] != -1) while (kill(pids_to_kill[i], SIGINT) == -1) {}
     }
-    give_sem();
-    shmdt((void*) pids_to_kill);
-    shmdt((void*) loads);
-    shmdt((void*) times_arr);
-    semctl(semaphore, 0, IPC_RMID, 0);
-    shmctl(employee_loads, IPC_RMID, NULL);
-    shmctl(employee_pids, IPC_RMID, NULL);
-    shmctl(load_times, IPC_RMID, NULL);
-    exit(0);
+
+    if(munmap((void*) pids_to_kill, 2 * K * sizeof(pid_t)) == -1) exit_errno();
+    if(munmap((void*) tape_load, (2 + K) * sizeof(int)) == -1) exit_errno();
+    if(munmap((void*) times_arr, K * sizeof(struct timeval)) == -1) exit_errno();
+    if(munmap((void*) K_shared, sizeof(int)) == -1) exit_errno();
+
+    if(sem_close(semaphore) == -1) exit_errno();
+    if(sem_unlink(SEM_NAME) == -1) exit_errno();
+
+    if(shm_unlink(SHM_K) == -1) exit_errno();
+    if(shm_unlink(SHM_NAME) == -1) exit_errno();
+    if(shm_unlink(SHM_NAME1) == -1) exit_errno();
+    if(shm_unlink(SHM_NAME2) == -1) exit_errno();
 }
 
 void load_remaining() {
@@ -117,43 +122,52 @@ void load_package_to_truck() {
 }
 
 void init_ipc() {
-    semaphore = semget(SEM_KEY, 1, 0777 | IPC_CREAT);
-    if (semaphore == -1) exit_errno();
+    semaphore = sem_open(SEM_NAME, O_CREAT, 0777, 0);
+    if (semaphore == SEM_FAILED) exit_errno();
 
-    union semun arg;
-    arg.val = 0;
-    if (semctl(semaphore, 0, SETVAL, arg) == -1) exit_errno();
-
-    employee_pids = shmget(SHM_KEY, 2 * K * sizeof(pid_t), 0777 | IPC_CREAT);
+    employee_pids = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
     if (employee_pids == -1) exit_errno();
+    ftruncate(employee_pids, 2 * K * sizeof(pid_t));
 
-    pids_to_kill = pids = (pid_t*) shmat(employee_pids, NULL, 0);
-    if (pids == (void*) -1) exit_errno();
+    pids_to_kill = pids = (pid_t*) mmap(NULL, 2 * K * sizeof(pid_t), PROT_READ | PROT_WRITE,
+                                        MAP_SHARED, employee_pids, 0);
+    if (pids == MAP_FAILED) exit_errno();
 
-    load_times = shmget(SHM_KEY + 1, K * sizeof(struct timeval), 0777 | IPC_CREAT);
+    load_times = shm_open(SHM_NAME1, O_CREAT | O_RDWR, 0777);
     if (load_times == -1) exit_errno();
+    ftruncate(load_times, K * sizeof(struct timeval));
 
-    times_arr = (struct timeval*) shmat(load_times, NULL, 0);
-    if (times_arr == (void*) -1) exit_errno();
+    times_arr = (struct timeval*) mmap(NULL, K * sizeof(pid_t), PROT_READ | PROT_WRITE,
+                                       MAP_SHARED, load_times, 0);
+    if (times_arr == MAP_FAILED) exit_errno();
 
-    employee_loads = shmget(SHM_KEY + 2, (K + 3) * sizeof(int), 0777 | IPC_CREAT);
+    employee_loads = shm_open(SHM_NAME2, O_CREAT | O_RDWR, 0777);
     if (employee_loads == -1) exit_errno();
+    if(ftruncate(employee_loads, (2 + K) * sizeof(pid_t)) == -1) exit_errno();
 
-    loads = shmat(employee_loads, NULL, 0);
-    if (loads == (void*) -1) exit_errno();
+    loads = (int*) mmap(NULL, (2 + K) * sizeof(pid_t), PROT_READ | PROT_WRITE,
+                        MAP_SHARED, employee_loads, 0);
+    if (loads == MAP_FAILED) exit_errno();
 
-    loads = (int*) loads;
     loads[0] = 0; // tape starts with 0 load
-    loads[1] = K;
-    loads[2] = M;
+    loads[1] = M;
     tape_load = &loads[0];
-    loads += 3;
+    loads += 2;
 
     for (int i = 0; i < K; ++i) {
         loads[i] = 0;
         pids[i] = pids[i + K] = -1;
     }
     pids += K;
+
+    k_fd = shm_open(SHM_K, O_CREAT | O_RDWR, 0777);
+    if (k_fd == -1) exit_errno();
+    if(ftruncate(k_fd, sizeof(int)) == -1) exit_errno();
+
+    K_shared = (int*) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
+                        MAP_SHARED, k_fd, 0);
+    if (K_shared == MAP_FAILED) exit_errno();
+    *K_shared = K;
 }
 
 int main(int argc, char* argv[]) {
@@ -167,9 +181,7 @@ int main(int argc, char* argv[]) {
     struct sigaction sa;
     sa.sa_handler = sigint_handle;
     sigaction(SIGINT, &sa, NULL);
-
     init_ipc();
-
     while (1) {
         truck_load = 0;
         printf("Empty truck arriving... [%.6f]\n", get_curr_time());
@@ -202,18 +214,10 @@ void exit_errno() {
     exit_msg(strerror(errno));
 }
 
-void operate(int val) {
-    struct sembuf sem_action;
-    sem_action.sem_flg = SEM_UNDO;
-    sem_action.sem_num = 0;
-    sem_action.sem_op = val;
-    semop(semaphore, &sem_action, 1);
-}
-
 void take_sem() {
-    operate(-1);
+    if (sem_wait(semaphore) == -1) exit_errno();
 }
 
 void give_sem() {
-    operate(1);
+    if (sem_post(semaphore) == -1) exit_errno();
 }
