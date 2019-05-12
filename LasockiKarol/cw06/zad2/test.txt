@@ -1,0 +1,20 @@
+ECHO witaj w chacie
+FRIENDS 0 1 2
+ADD 1 2
+2ALL witajcie
+2FRIENDS zapraszam
+2ONE 2 witaj, 2
+FRIENDS 1
+2FRIENDS zapraszam jeszcze raz
+LIST
+ADD 1 2
+2ALL witajcie
+2FRIENDS zapraszam
+2ONE 0 witaj, 0
+DEL 2
+2FRIENDS zapraszam
+FRIENDS 0 1 2
+DEL 0 1
+2ALL przyjacielem powinien byc tylko 2
+2FRIENDS zapraszam
+STOP
