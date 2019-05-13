@@ -14,13 +14,17 @@
 #include <zconf.h>
 #include <sys/shm.h>
 
-#define SEM_NAME "/posixsem"
+#define TAPE_SEM_NAME "/posixsem"
+#define LOAD_SEM_NAME "/posixsem1"
+#define TRUCK_SEM_NAME "/posixsem2"
 #define SHM_NAME "/posixshm"
 #define SHM_NAME1 "/posixshm1"
 #define SHM_NAME2 "/posixshm2"
 #define SHM_K "/posixshmK"
 
-sem_t* semaphores = NULL;
+sem_t* tape_sem = NULL;
+sem_t* load_sem = NULL;
+sem_t* truck_sem = NULL;
 int employee_pids = -1;
 int employee_loads = -1;
 int load_times = -1;
@@ -37,10 +41,21 @@ int M;
 int truck_load = 0;
 
 
+void take_load_sem();
+
+int take_load_nonblock();
+
+void give_load_sem();
+
+void take_truck_sem();
+
+int take_truck_nonblock();
+
+void give_truck_sem();
+
 void give_tape_sem();
 
 void take_tape_sem();
-
 void exit_errno();
 
 void exit_msg(char* msg);
@@ -72,7 +87,7 @@ void sigint_handle(int signum) {
 void exit_fun() {
     printf("\nRunning out of trucks! Loading remaining packages...\n\n");
     int sem_val;
-    if (sem_getvalue(semaphores, &sem_val) == -1) exit_errno();
+    if (sem_getvalue(tape_sem, &sem_val) == -1) exit_errno();
     if (sem_val == 1) take_tape_sem();
     load_remaining();
     printf("Trucker loaded all packages and quiting - killing all the employees...\n");
@@ -85,8 +100,13 @@ void exit_fun() {
     if(munmap((void*) times_arr, K * sizeof(struct timeval)) == -1) exit_errno();
     if(munmap((void*) K_shared, sizeof(int)) == -1) exit_errno();
 
-    if(sem_close(semaphores) == -1) exit_errno();
-    if(sem_unlink(SEM_NAME) == -1) exit_errno();
+    if(sem_close(tape_sem) == -1) exit_errno();
+    if(sem_close(load_sem) == -1) exit_errno();
+    if(sem_close(truck_sem) == -1) exit_errno();
+
+    if(sem_unlink(TAPE_SEM_NAME) == -1) exit_errno();
+    if(sem_unlink(TRUCK_SEM_NAME) == -1) exit_errno();
+    if(sem_unlink(LOAD_SEM_NAME) == -1) exit_errno();
 
     if(shm_unlink(SHM_K) == -1) exit_errno();
     if(shm_unlink(SHM_NAME) == -1) exit_errno();
@@ -122,8 +142,12 @@ void load_package_to_truck() {
 }
 
 void init_ipc() {
-    semaphores = sem_open(SEM_NAME, O_CREAT, 0777, 0);
-    if (semaphores == SEM_FAILED) exit_errno();
+    tape_sem = sem_open(TAPE_SEM_NAME, O_CREAT, 0777, 0);
+    if (tape_sem == SEM_FAILED) exit_errno();
+    load_sem = sem_open(LOAD_SEM_NAME, O_CREAT, 0777, K);
+    if (load_sem == SEM_FAILED) exit_errno();
+    truck_sem = sem_open(TRUCK_SEM_NAME, O_CREAT, 0777, 0);
+    if (truck_sem == SEM_FAILED) exit_errno();
 
     employee_pids = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
     if (employee_pids == -1) exit_errno();
@@ -181,24 +205,26 @@ int main(int argc, char* argv[]) {
     struct sigaction sa;
     sa.sa_handler = sigint_handle;
     sigaction(SIGINT, &sa, NULL);
+
     init_ipc();
-    int loaders_spawned = 0;
+
     while (1) {
         truck_load = 0;
         printf("Empty truck arriving... [%.6f]\n", get_curr_time());
-        if(!loaders_spawned) printf("Truck waiting for packages...[%.6f]\n", get_curr_time());
         give_tape_sem();
         while (1) {
+            if (take_truck_nonblock() == -1) {
+                printf("Truck waiting for packages...[%.6f]\n", get_curr_time());
+                take_truck_sem();
+            }
             take_tape_sem();
-            if (loads[0] == 0) {
-                if(loaders_spawned) printf("Truck waiting for packages...[%.6f]\n", get_curr_time());
-                give_tape_sem(0);
-            } else if (truck_load + loads[0] <= X) {
-                loaders_spawned = 1;
+            if (truck_load + loads[0] <= X) {
                 load_package_to_truck();
-                give_tape_sem(0);
+                give_tape_sem();
+                give_load_sem();
             } else {
                 printf("Loaded truck is leaving with load %d...[%.6f]\n", truck_load, get_curr_time());
+                give_truck_sem();
                 break;
             }
         }
@@ -217,9 +243,37 @@ void exit_errno() {
 }
 
 void take_tape_sem() {
-    if (sem_wait(semaphores) == -1) exit_errno();
+    if (sem_wait(tape_sem) == -1) exit_errno();
 }
 
 void give_tape_sem() {
-    if (sem_post(semaphores) == -1) exit_errno();
+    if (sem_post(tape_sem) == -1) exit_errno();
+}
+
+void take_load_sem() {
+    if (sem_wait(load_sem) == -1) exit_errno();
+}
+
+void give_load_sem() {
+    if (sem_post(load_sem) == -1) exit_errno();
+}
+
+void take_truck_sem() {
+    if (sem_wait(truck_sem) == -1) exit_errno();
+}
+
+void give_truck_sem() {
+    if (sem_post(truck_sem) == -1) exit_errno();
+}
+
+int take_truck_nonblock(){
+    int res = sem_trywait(truck_sem);
+    if(res == -1 && errno != EAGAIN) exit_errno();
+    return res;
+}
+
+int take_load_nonblock(){
+    int res = sem_trywait(load_sem);
+    if(res == -1 && errno != EAGAIN) exit_errno();
+    return res;
 }

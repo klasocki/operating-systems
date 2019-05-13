@@ -16,7 +16,7 @@
 #define SHM_KEY 17
 int N;
 int C = -1;
-int semaphores = -1;
+int tape_sem = -1;
 int employee_pids = -1;
 int employee_loads = -1;
 int load_times = -1;
@@ -60,8 +60,8 @@ double get_curr_time() {
 }
 
 void init_ipc() {
-    semaphores = semget(SEM_KEY, 0, 0777);
-    if (semaphores == -1) exit_msg("Could not access semaphore, make sure trucker is started first");
+    tape_sem = semget(SEM_KEY, 0, 0777);
+    if (tape_sem == -1) exit_msg("Could not access semaphore, make sure trucker is started first");
 
     employee_pids = shmget(SHM_KEY, 0, 0777);
     if (employee_pids == -1) exit_msg("Could not access shared mem, make sure trucker is started first");
@@ -178,33 +178,33 @@ int operate(int val, int sem, int sem_flg) {
     sem_action.sem_flg = sem_flg;
     sem_action.sem_num = sem;
     sem_action.sem_op = val;
-    int res = semop(semaphores, &sem_action, 1);
+    int res = semop(tape_sem, &sem_action, 1);
     if (res == -1 && errno != EAGAIN) exit_errno();
     return res;
 }
 
 void take_tape_sem() {
-    operate(-1, 0, SEM_UNDO);
+    operate(-1, 0, 0);
 }
 
 void give_tape_sem() {
-    operate(1, 0, SEM_UNDO);
+    operate(1, 0, 0);
 }
 
 void take_load_sem() {
-    operate(-1, 1, SEM_UNDO);
+    operate(-1, 1, 0);
 }
 
 void give_load_sem() {
-    operate(1, 1, SEM_UNDO);
+    operate(1, 1, 0);
 }
 
 void take_truck_sem() {
-    operate(-1, 2, SEM_UNDO);
+    operate(-1, 2, 0);
 }
 
 void give_truck_sem() {
-    operate(1, 2, SEM_UNDO);
+    operate(1, 2, 0);
 }
 
 int take_load_nonblock() {
