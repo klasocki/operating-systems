@@ -14,7 +14,7 @@
 
 #define SEM_KEY 147
 #define SHM_KEY 17
-int semaphore = -1;
+int semaphores = -1;
 int employee_pids = -1;
 int employee_loads = -1;
 int load_times = -1;
@@ -36,9 +36,21 @@ union semun {
                                            (Linux-specific) */
 };
 
-void give_sem();
+void take_load_sem();
 
-void take_sem();
+int take_load_nonblock();
+
+void give_load_sem();
+
+void take_truck_sem();
+
+int take_truck_nonblock();
+
+void give_truck_sem();
+
+void give_tape_sem();
+
+void take_tape_sem();
 
 void exit_errno();
 
@@ -70,19 +82,19 @@ void sigint_handle(int signum) {
 
 void exit_fun() {
     printf("\nRunning out of trucks! Loading remaining packages...\n\n");
-    int sem_val  = semctl(semaphore, 0, GETVAL);
-    if(sem_val == -1) exit_errno();
-    if(sem_val == 1) take_sem();
+    int sem_val = semctl(semaphores, 0, GETVAL);
+    if (sem_val == -1) exit_errno();
+    if (sem_val == 1) take_tape_sem();
     load_remaining();
     printf("Trucker loaded all packages and quiting - killing all the employees...\n");
     for (int i = 0; i < K; i++) {
-        if (pids_to_kill[i] != -1) while (kill(pids_to_kill[i], SIGINT) == -1) {}
+        if (pids_to_kill[i] != -1) while (kill(pids_to_kill[i], SIGINT) == -1) { if (errno == ESRCH) break; }
     }
-    give_sem();
+    give_tape_sem();
     shmdt((void*) pids_to_kill);
     shmdt((void*) loads);
     shmdt((void*) times_arr);
-    semctl(semaphore, 0, IPC_RMID, 0);
+    semctl(semaphores, 0, IPC_RMID, 0);
     shmctl(employee_loads, IPC_RMID, NULL);
     shmctl(employee_pids, IPC_RMID, NULL);
     shmctl(load_times, IPC_RMID, NULL);
@@ -114,15 +126,20 @@ void load_package_to_truck() {
     }
     loads[K - 1] = 0;
     pids[K - 1] = -1;
+    give_load_sem();
 }
 
 void init_ipc() {
-    semaphore = semget(SEM_KEY, 1, 0777 | IPC_CREAT);
-    if (semaphore == -1) exit_errno();
+    semaphores = semget(SEM_KEY, 3, 0777 | IPC_CREAT);
+    if (semaphores == -1) exit_errno();
 
     union semun arg;
     arg.val = 0;
-    if (semctl(semaphore, 0, SETVAL, arg) == -1) exit_errno();
+    if (semctl(semaphores, 0, SETVAL, arg) == -1) exit_errno();
+    arg.val = K;
+    if (semctl(semaphores, 1, SETVAL, arg) == -1) exit_errno();
+    arg.val = 0;
+    if (semctl(semaphores, 2, SETVAL, arg) == -1) exit_errno();
 
     employee_pids = shmget(SHM_KEY, 2 * K * sizeof(pid_t), 0777 | IPC_CREAT);
     if (employee_pids == -1) exit_errno();
@@ -173,18 +190,20 @@ int main(int argc, char* argv[]) {
     while (1) {
         truck_load = 0;
         printf("Empty truck arriving... [%.6f]\n", get_curr_time());
-        give_sem();
+        give_tape_sem();
         while (1) {
-            take_sem();
-            if (loads[0] == 0) {
+            if (take_truck_nonblock() == -1) {
                 printf("Truck waiting for packages...[%.6f]\n", get_curr_time());
-                give_sem(0);
-                sleep(2);
-            } else if (truck_load + loads[0] <= X) {
+                take_truck_sem();
+            }
+            take_tape_sem();
+            if (truck_load + loads[0] <= X) {
                 load_package_to_truck();
-                give_sem(0);
+                give_load_sem();
+                give_tape_sem();
             } else {
                 printf("Loaded truck is leaving with load %d...[%.6f]\n", truck_load, get_curr_time());
+                give_truck_sem();
                 break;
             }
         }
@@ -202,18 +221,46 @@ void exit_errno() {
     exit_msg(strerror(errno));
 }
 
-void operate(int val) {
+int operate(int val, int sem, int sem_flg) {
     struct sembuf sem_action;
-    sem_action.sem_flg = SEM_UNDO;
-    sem_action.sem_num = 0;
+    sem_action.sem_flg = sem_flg;
+    sem_action.sem_num = sem;
     sem_action.sem_op = val;
-    semop(semaphore, &sem_action, 1);
+    int res = semop(semaphores, &sem_action, 1);
+    if (res == -1 && errno != EAGAIN) exit_errno();
+    return res;
 }
 
-void take_sem() {
-    operate(-1);
+void take_tape_sem() {
+    operate(-1, 0, SEM_UNDO);
 }
 
-void give_sem() {
-    operate(1);
+void give_tape_sem() {
+    operate(1, 0, SEM_UNDO);
 }
+
+void take_load_sem() {
+    operate(-1, 1, SEM_UNDO);
+}
+
+void give_load_sem() {
+    operate(1, 1, SEM_UNDO);
+}
+
+void take_truck_sem() {
+    operate(-1, 2, SEM_UNDO);
+}
+
+void give_truck_sem() {
+    operate(1, 2, SEM_UNDO);
+}
+
+int take_load_nonblock() {
+    return operate(-1, 1, IPC_NOWAIT);
+}
+
+int take_truck_nonblock() {
+    return operate(-1, 2, IPC_NOWAIT);
+}
+
+

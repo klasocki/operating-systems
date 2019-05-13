@@ -19,7 +19,7 @@ void respond_to_add();
 
 void respond_to_del();
 
-int server_queue_id;
+int server_queue;
 int clients[MAX_CLIENTS];
 int friends[MAX_CLIENTS][MAX_CLIENTS];
 
@@ -67,7 +67,6 @@ void respond_to_init() {
     int client_queue_id = msg.int_val;
     clients[i] = client_queue_id;
     msg.sender_id = i;
-    remove_all_client_friends(i);
 
     msgsnd(client_queue_id, &msg, MESSAGE_SIZE, 0);
 }
@@ -75,12 +74,10 @@ void respond_to_init() {
 void respond_to_stop() {
     int client_queue_id = msg.int_val;
     msg.type = STOP;
-    for (int i = 0; i < MAX_CLIENTS; i++)
-        if (clients[i] == client_queue_id) clients[i] = 0;
-
-    msg.sender_id = -1;
-    msg.int_val = -1;
-
+    int i;
+    for (i = 0; i < MAX_CLIENTS && clients[i] != client_queue_id; i++) {}
+    clients[i] = 0;
+    remove_all_client_friends(i);
     msgsnd(client_queue_id, &msg, MESSAGE_SIZE, 0);
 }
 
@@ -231,7 +228,7 @@ void exit_handler() {
         msgsnd(clients[i], &msg, MESSAGE_SIZE, 0);
     }
 
-    msgctl(server_queue_id, IPC_RMID, NULL);
+    msgctl(server_queue, IPC_RMID, NULL);
     exit(0);
 }
 
@@ -242,15 +239,15 @@ int main(int argc, char** argv) {
             friends[i][j] = -1;
 
     key_t key = ftok(SERVER_ID_PATH, SERVER_ID_SEED);
-    server_queue_id = msgget(key, IPC_CREAT | QUEUE_PERMISSIONS);
+    server_queue = msgget(key, IPC_CREAT | QUEUE_PERMISSIONS);
 
     signal(SIGINT, exit_handler);
 
     printf("________________________________\n\tChat server start\n________________________________\n");
-    printf("Server message queue ID: %d\n", server_queue_id);
+    printf("Server message queue ID: %d\n", server_queue);
 
     while (1) {
-        msgrcv(server_queue_id, &msg, MESSAGE_SIZE, PRIORITY_QUEUE, 0);
+        msgrcv(server_queue, &msg, MESSAGE_SIZE, PRIORITY_QUEUE, 0);
 
         log_message();
 

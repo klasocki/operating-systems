@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include "chat.h"
 
-int server_queue_id;
-int client_queue_id;
+int server_queue;
+int client_queue;
 int client_id;
 pid_t child_pid;
 struct Message msg;
@@ -24,21 +24,15 @@ void execute_commands_from(FILE* stream);
 
 void handle_message();
 
-void send_add(char* command);
+void send_add(char* string);
 
-void send_del(char* command);
+void send_del(char* string);
 
 void send_request(int async) {
-    msgsnd(server_queue_id, &msg, MESSAGE_SIZE, 0);
+    msgsnd(server_queue, &msg, MESSAGE_SIZE, 0);
 
-    if (!async) {
-        struct Message res;
-        msgrcv(client_queue_id, &res, MESSAGE_SIZE, 0, 0);
-
-        msg.sender_id = res.sender_id;
-        msg.int_val = res.int_val;
-        strcpy(msg.argument, res.argument);
-    }
+    if (!async)
+        msgrcv(client_queue, &msg, MESSAGE_SIZE, 0, 0);
 }
 
 void send(enum Type type, int async) {
@@ -73,7 +67,7 @@ void send_list() {
 }
 
 void send_stop() {
-    msg.int_val = client_queue_id;
+    msg.int_val = client_queue;
     send(STOP, 1);
 }
 
@@ -96,14 +90,14 @@ void send_add(char* string) {
 
 
 void send_init() {
-    msg.int_val = client_queue_id;
+    msg.int_val = client_queue;
     send(INIT, 0);
     client_id = msg.sender_id;
     printf("Client ID: %d\n", client_id);
 }
 
 void client_logout() {
-    msgctl(client_queue_id, IPC_RMID, NULL);
+    msgctl(client_queue, IPC_RMID, NULL);
     kill(child_pid, SIGKILL);
     exit(0);
 }
@@ -183,7 +177,7 @@ void execute_commands_from(FILE* stream) {
 
 
 void handle_message() {
-    if (msgrcv(client_queue_id, &msg, MESSAGE_SIZE, PRIORITY_QUEUE, 0) == -1) {
+    if (msgrcv(client_queue, &msg, MESSAGE_SIZE, PRIORITY_QUEUE, 0) == -1) {
         return;
     }
     if (msg.type == STOP) client_logout();
@@ -200,16 +194,16 @@ int main(int argc, char** argv) {
 
     key_t server_key = ftok(SERVER_ID_PATH, SERVER_ID_SEED);
 
-    if ((server_queue_id = msgget(server_key, QUEUE_PERMISSIONS)) == -1) {
+    if ((server_queue = msgget(server_key, QUEUE_PERMISSIONS)) == -1) {
         exit_msg("Could not connect to server");
     }
 
-    if ((client_queue_id = msgget(IPC_PRIVATE, QUEUE_PERMISSIONS)) == -1) {
+    if ((client_queue = msgget(IPC_PRIVATE, QUEUE_PERMISSIONS)) == -1) {
         exit_msg("Could not create private queue");
     }
 
-    printf("Server message queue ID: %d\n", server_queue_id);
-    printf("Private message queue ID: %d\n", client_queue_id);
+    printf("Server message queue ID: %d\n", server_queue);
+    printf("Private message queue ID: %d\n", client_queue);
 
     send_init();
     execute_commands_from(stdin);

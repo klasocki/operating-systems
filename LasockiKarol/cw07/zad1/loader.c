@@ -16,7 +16,7 @@
 #define SHM_KEY 17
 int N;
 int C = -1;
-int semaphore = -1;
+int semaphores = -1;
 int employee_pids = -1;
 int employee_loads = -1;
 int load_times = -1;
@@ -33,23 +33,35 @@ void exit_errno();
 
 void exit_msg(char* msg);
 
-void give_sem();
+void take_load_sem();
 
-void take_sem();
+int take_load_nonblock();
 
-double get_time(struct timeval tm){
+void give_load_sem();
+
+void take_truck_sem();
+
+int take_truck_nonblock();
+
+void give_truck_sem();
+
+void give_tape_sem();
+
+void take_tape_sem();
+
+double get_time(struct timeval tm) {
     return (double) tm.tv_sec + (double) tm.tv_usec / 1e6;
 }
 
-double get_curr_time(){
+double get_curr_time() {
     struct timeval t;
     gettimeofday(&t, NULL);
     return get_time(t);
 }
 
 void init_ipc() {
-    semaphore = semget(SEM_KEY, 0, 0777);
-    if (semaphore == -1) exit_msg("Could not access semaphore, make sure trucker is started first");
+    semaphores = semget(SEM_KEY, 0, 0777);
+    if (semaphores == -1) exit_msg("Could not access semaphore, make sure trucker is started first");
 
     employee_pids = shmget(SHM_KEY, 0, 0777);
     if (employee_pids == -1) exit_msg("Could not access shared mem, make sure trucker is started first");
@@ -78,28 +90,42 @@ void init_ipc() {
     pids += K;
     // sign up at the trucker kill list
     int i;
-    for(i = 0; i < K && pids_to_kill[i] != -1; i++) {}
-    if( i < K) pids_to_kill[i] = getpid();
+    for (i = 0; i < K && pids_to_kill[i] != -1; i++) {}
+    if (i < K) pids_to_kill[i] = getpid();
     else exit_msg("Too many loaders!");
 }
 
 void load() {
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
-    take_sem(0);
-    int i;
-    for (i = 0; i < K && loads[i] != 0; i++) {} // find free spot on tape to place package
-    if (*tape_load + N < M && i < K) {
-        *tape_load += N;
-        printf("Loader %d loading %d [%.6f]\n", getpid(), N, get_curr_time());
-        loads[i] = N;
-        pids[i] = getpid();
-        times_arr[i] = current_time;
-        give_sem(0);
-    } else {
-        printf("No space on tape, employee %d waiting for truck to load...[%.6f]\n", getpid(), get_curr_time());
-        give_sem(0);
-        sleep(1);
+    int loaded = 0;
+    int try_number = -1;
+    while(!loaded) {
+        if(try_number < 1)  ++try_number;
+        if(try_number == 0){
+            if (take_load_nonblock() == -1) {
+                printf("No space on tape, employee %d waiting for truck to load...[%.6f]\n", getpid(), get_curr_time());
+                take_load_sem();
+            }
+        } else{
+            take_load_sem();
+        }
+        take_tape_sem();
+        int i;
+        for (i = 0; i < K && loads[i] != 0; i++) {} // find free spot on tape to place package
+        if (i != K && *tape_load + N <= M) {
+            printf("Loader %d loading %d [%.6f]\n", getpid(), N, get_curr_time());
+            loads[i] = N;
+            pids[i] = getpid();
+            times_arr[i] = current_time;
+            *tape_load += N;
+            loaded = 1;
+            give_truck_sem();
+        } else {
+            if(try_number == 0) printf("Tape overweighted, employee %d waiting for truck to load...[%.6f]\n", getpid(), get_curr_time());
+            give_load_sem();
+        }
+        give_tape_sem();
     }
 }
 
@@ -109,7 +135,7 @@ void exit_fun() {
     shmdt((void*) times_arr);
 }
 
-void sigint_handle(int signum){
+void sigint_handle(int signum) {
     printf("Employee %d killed by trucker\n", getpid());
     exit(0);
 }
@@ -147,19 +173,44 @@ void exit_errno() {
     exit_msg(strerror(errno));
 }
 
-void operate(int val) {
+int operate(int val, int sem, int sem_flg) {
     struct sembuf sem_action;
-    sem_action.sem_flg = SEM_UNDO;
-    sem_action.sem_num = 0;
+    sem_action.sem_flg = sem_flg;
+    sem_action.sem_num = sem;
     sem_action.sem_op = val;
-    semop(semaphore, &sem_action, 1);
+    int res = semop(semaphores, &sem_action, 1);
+    if (res == -1 && errno != EAGAIN) exit_errno();
+    return res;
 }
 
-void take_sem() {
-    operate(-1);
+void take_tape_sem() {
+    operate(-1, 0, SEM_UNDO);
 }
 
-void give_sem() {
-    operate(1);
+void give_tape_sem() {
+    operate(1, 0, SEM_UNDO);
 }
 
+void take_load_sem() {
+    operate(-1, 1, SEM_UNDO);
+}
+
+void give_load_sem() {
+    operate(1, 1, SEM_UNDO);
+}
+
+void take_truck_sem() {
+    operate(-1, 2, SEM_UNDO);
+}
+
+void give_truck_sem() {
+    operate(1, 2, SEM_UNDO);
+}
+
+int take_load_nonblock() {
+    return operate(-1, 1, IPC_NOWAIT);
+}
+
+int take_truck_nonblock() {
+    return operate(-1, 2, IPC_NOWAIT);
+}
