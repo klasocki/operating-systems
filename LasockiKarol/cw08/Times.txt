@@ -1,0 +1,237 @@
+___________________
+Filter: 3x3
+__________________
+---------
+===== block ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	0.079731s
+Total time taken:	0.079978s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	0.046684s
+Number 2:	0.046656s
+Total time taken:	0.046922s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	0.022606s
+Number 2:	0.022617s
+Number 3:	0.022559s
+Number 4:	0.022605s
+Total time taken:	0.022781s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	0.011309s
+Number 2:	0.022668s
+Number 3:	0.020461s
+Number 4:	0.011914s
+Number 5:	0.011387s
+Number 6:	0.011252s
+Number 7:	0.014904s
+Number 8:	0.019986s
+Total time taken:	0.023008s
+---------
+---------
+===== interleaved ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	0.079357s
+Total time taken:	0.079610s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	0.045930s
+Number 2:	0.045930s
+Total time taken:	0.046147s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	0.022675s
+Number 2:	0.022846s
+Number 3:	0.022753s
+Number 4:	0.022694s
+Total time taken:	0.022923s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	0.015601s
+Number 2:	0.016436s
+Number 3:	0.011624s
+Number 4:	0.011346s
+Number 5:	0.013554s
+Number 6:	0.013591s
+Number 7:	0.017675s
+Number 8:	0.019794s
+Total time taken:	0.023169s
+---------
+___________________
+Filter: 65x65
+__________________
+---------
+===== block ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	33.531762s
+Total time taken:	33.532018s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	17.620938s
+Number 2:	17.725538s
+Total time taken:	17.725628s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	9.679142s
+Number 2:	9.787240s
+Number 3:	9.752281s
+Number 4:	9.841925s
+Total time taken:	9.842396s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	9.631348s
+Number 2:	9.660383s
+Number 3:	9.645829s
+Number 4:	9.590663s
+Number 5:	9.645099s
+Number 6:	9.634132s
+Number 7:	9.686904s
+Number 8:	9.619612s
+Total time taken:	9.708360s
+---------
+---------
+===== interleaved ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	33.048593s
+Total time taken:	33.048823s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	17.502167s
+Number 2:	17.502191s
+Total time taken:	17.502381s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	9.830959s
+Number 2:	9.875697s
+Number 3:	9.638199s
+Number 4:	9.815987s
+Total time taken:	9.875710s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	9.704562s
+Number 2:	9.837793s
+Number 3:	9.808110s
+Number 4:	9.689912s
+Number 5:	9.826650s
+Number 6:	9.618056s
+Number 7:	9.801207s
+Number 8:	9.850905s
+Total time taken:	9.869343s
+---------
+___________________
+Filter: 33x33
+__________________
+---------
+===== block ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	8.626973s
+Total time taken:	8.627201s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	4.649803s
+Number 2:	4.603481s
+Total time taken:	4.649882s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	2.584499s
+Number 2:	2.585453s
+Number 3:	2.640488s
+Number 4:	2.597528s
+Total time taken:	2.640554s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	3.180838s
+Number 2:	2.846527s
+Number 3:	3.013398s
+Number 4:	3.093195s
+Number 5:	2.945348s
+Number 6:	3.038956s
+Number 7:	3.067807s
+Number 8:	3.164907s
+Total time taken:	3.180830s
+---------
+---------
+===== interleaved ======
+
+Thread number: 1
+
+Thread execution times:
+Number 1:	8.614976s
+Total time taken:	8.615148s
+
+Thread number: 2
+
+Thread execution times:
+Number 1:	4.507682s
+Number 2:	4.507635s
+Total time taken:	4.507857s
+
+Thread number: 4
+
+Thread execution times:
+Number 1:	2.517959s
+Number 2:	2.504793s
+Number 3:	2.507635s
+Number 4:	2.522548s
+Total time taken:	2.522571s
+
+Thread number: 8
+
+Thread execution times:
+Number 1:	2.524941s
+Number 2:	2.460522s
+Number 3:	2.473668s
+Number 4:	2.381768s
+Number 5:	2.486914s
+Number 6:	2.511139s
+Number 7:	2.534730s
+Number 8:	2.531312s
+Total time taken:	2.551810s
+---------
